@@ -65,8 +65,9 @@ Write-Info "Found $($clips.Count) clip(s) in $DataDir"
 $processed = 0
 $failed = 0
 
-# Convert DataDir to absolute path before changing directories
+# Convert paths to absolute before changing directories
 $AbsoluteDataDir = Resolve-Path -Path $DataDir -ErrorAction Stop | Select-Object -ExpandProperty Path
+$AbsoluteLayoutPath = Resolve-Path -Path $LayoutPath -ErrorAction Stop | Select-Object -ExpandProperty Path
 
 # ── 3. Process clips using the Python Batch Runner ─────────────
 Write-Info "Delegating batch execution to Python so Re-ID memory is shared..."
@@ -76,6 +77,6 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectRoot = Split-Path -Parent $ScriptDir
 Set-Location -Path $ProjectRoot
 
-$proc = Start-Process -FilePath "python" -ArgumentList "-m pipeline.batch_run --data-dir `"$AbsoluteDataDir`" --store-id `"$StoreId`" --layout `"$LayoutPath`"" -NoNewWindow -Wait -PassThru
+$proc = Start-Process -FilePath "python" -ArgumentList "-m pipeline.batch_run --data-dir `"$AbsoluteDataDir`" --store-id `"$StoreId`" --layout `"$AbsoluteLayoutPath`"" -NoNewWindow -Wait -PassThru
 
 exit $proc.ExitCode
