@@ -1,0 +1,18 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+sqlalchemy[asyncio]==2.0.36
+psycopg2-binary==2.9.10
+pydantic==2.10.3
+structlog==24.4.0
+python-dotenv==1.0.1
+
+# Testing
+pytest==8.3.4
+pytest-cov==6.0.0
+httpx==0.28.1
+
+# Dashboard
+streamlit==1.41.1
+plotly==5.24.1
+pandas==2.2.3
+requests==2.32.3

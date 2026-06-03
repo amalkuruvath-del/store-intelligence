@@ -1,0 +1,7 @@
+# Detection pipeline dependencies
+# Install with: pip install -r pipeline/requirements.txt
+ultralytics>=8.3.0
+opencv-python>=4.10.0
+numpy>=1.26.0
+scipy>=1.14.0
+requests>=2.32.0

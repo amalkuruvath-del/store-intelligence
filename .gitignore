@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+.env
+.pytest_cache/
+*.mp4
+*.avi
+dataset/
+CCTV Footage/
+sample_events*.jsonl
+*.pdf
+*.pt

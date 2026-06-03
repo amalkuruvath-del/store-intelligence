@@ -1,0 +1,46 @@
+
+services:
+  # ---------- PostgreSQL ----------
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: store_intelligence
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d store_intelligence"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ---------- FastAPI backend ----------
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/store_intelligence
+    volumes:
+      - ./data:/data
+
+  # ---------- Streamlit Dashboard ----------
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    ports:
+      - "8501:8501"
+    depends_on:
+      - api
+    environment:
+      API_URL: http://api:8000
+
+volumes:
+  pgdata:
