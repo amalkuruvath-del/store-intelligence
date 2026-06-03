@@ -37,11 +37,16 @@ docker compose ps   # All services should show "healthy"
 # Keep the store folder (containing the .mp4 files and store_layout.json) 
 # directly into the existing 'data/' directory in this repo.
 
-# 5. Run the detection pipeline against the CCTV clips
+# 5. Install pipeline dependencies
+python -m venv venv
+source venv/bin/activate  # (Or `.\venv\Scripts\activate` on Windows)
+pip install -r pipeline/requirements.txt
+
+# 6. Run the detection pipeline against the CCTV clips
 # Usage: bash run.sh [PATH_TO_YOUR_DATA_FOLDER] [STORE_ID]
 cd pipeline && bash run.sh ../data/Store_1 STORE_01
 
-# 6. Verify — query store metrics
+# 7. Verify — query store metrics
 curl http://localhost:8000/stores/STORE_BLR_002/metrics | python -m json.tool
 ```
 
