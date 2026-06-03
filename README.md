@@ -34,7 +34,8 @@ docker compose up --build -d
 docker compose ps   # All services should show "healthy"
 
 # 4. Run the detection pipeline against the CCTV clips
-cd pipeline && bash run.sh --data-dir ../data
+# Usage: bash run.sh [PATH_TO_YOUR_DATA_FOLDER] [STORE_ID]
+cd pipeline && bash run.sh ../data STORE_BLR_002
 
 # 5. Verify — query store metrics
 curl http://localhost:8000/stores/STORE_BLR_002/metrics | python -m json.tool
