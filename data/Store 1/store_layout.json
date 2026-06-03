@@ -1,0 +1,37 @@
+{
+  "zones": {
+    "ENTRY_ZONE": {
+      "polygon": [[0,0], [1920,0], [1920,1080], [0,1080]],
+      "label": "Entry"
+    },
+    "SKINCARE": {
+      "polygon": [[0,0], [1920,0], [1920,1080], [0,1080]],
+      "label": "Skincare"
+    },
+    "FRAGRANCE": {
+      "polygon": [[0,0], [1920,0], [1920,1080], [0,1080]],
+      "label": "Fragrance"
+    },
+    "BILLING_QUEUE_01": {
+      "polygon": [[0,0], [1920,0], [1920,1080], [0,1080]],
+      "label": "Billing Queue"
+    }
+  },
+  "cameras": {
+    "CAM 3 - entry": {
+      "zones": ["ENTRY_ZONE"]
+    },
+    "CAM 1 - zone": {
+      "zones": ["SKINCARE"]
+    },
+    "CAM 2 - zone": {
+      "zones": ["FRAGRANCE"]
+    },
+    "CAM 5 - billing": {
+      "zones": ["BILLING_QUEUE_01"]
+    }
+  },
+  "entry_threshold_y": 800,
+  "billing_zone_id": "BILLING_QUEUE_01",
+  "open_hours": {"open": "09:00", "close": "21:00"}
+}

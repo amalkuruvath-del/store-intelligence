@@ -245,9 +245,8 @@ store-intelligence/
 │   ├── test_api.py             # Ingestion, idempotency, degradation tests
 │   ├── test_metrics.py         # Metrics, heatmap, funnel tests
 │   └── test_anomalies.py       # Anomaly detection tests
-├── docs/
-│   ├── DESIGN.md               # Architecture + AI-assisted decisions
-│   └── CHOICES.md              # 5 engineering decisions with full reasoning
+├── DESIGN.md                   # Architecture + AI-assisted decisions
+├── CHOICES.md                  # 5 engineering decisions with full reasoning
 ├── docker-compose.yml          # Services: api, db, dashboard
 ├── Dockerfile                  # python:3.11-slim single-stage build
 ├── requirements.txt            # Pinned Python dependencies
