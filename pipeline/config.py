@@ -67,7 +67,7 @@ the person to be classified as staff."""
 # Cross-camera Re-ID (Distance threshold. Higher = looser match)
 # Using PyTorch Neural Network, deep features are highly correlated for humans, so we need a very tight threshold.
 REID_DISTANCE_THRESHOLD: float = float(
-    os.getenv("SIS_REID_DISTANCE", "0.40")
+    os.getenv("SIS_REID_DISTANCE", "0.45")
 )
 """Maximum cosine distance (1 − similarity) to consider two appearance
 histograms as the same person across cameras."""
