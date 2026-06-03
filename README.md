@@ -33,15 +33,10 @@ docker compose up --build -d
 # 3. Wait for services to be healthy
 docker compose ps   # All services should show "healthy"
 
-# 4. Prepare the dataset
-# Extract the provided store folder (containing the .mp4 files and store_layout.json) 
-# directly into the existing 'data/' directory in this repo.
+# 4. Run the detection pipeline against the CCTV clips
+cd pipeline && bash run.sh --data-dir ../data
 
-# 5. Run the detection pipeline against the CCTV clips
-# Usage: bash run.sh [PATH_TO_YOUR_DATA_FOLDER] [STORE_ID]
-cd pipeline && bash run.sh ../data/Store_1 STORE_01
-
-# 6. Verify — query store metrics
+# 5. Verify — query store metrics
 curl http://localhost:8000/stores/STORE_BLR_002/metrics | python -m json.tool
 ```
 
