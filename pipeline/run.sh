@@ -33,7 +33,10 @@ set -euo pipefail
 # ── Defaults ──────────────────────────────────────────────────────────────
 DATA_DIR="${1:-data}"
 STORE_ID="${2:-STORE_01}"
-LAYOUT_PATH="${3:-store_layout.json}"
+LAYOUT_PATH="${3:-}"
+if [ -z "$LAYOUT_PATH" ]; then
+    LAYOUT_PATH="$DATA_DIR/store_layout.json"
+fi
 API_URL="${SIS_API_URL:-http://localhost:8000}"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

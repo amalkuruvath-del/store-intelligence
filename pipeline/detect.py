@@ -192,7 +192,7 @@ def run(
 
     tracker = VisitorTracker(
         camera_id=camera_id,
-        zones=layout.get("zones", {}),
+        zones=zones,
         entry_threshold_y=layout.get("entry_threshold_y"),
         billing_zone_id=billing_zone_id,
         is_billing_camera=is_billing_camera,
@@ -286,12 +286,12 @@ def run(
     VisitorTracker.update_staff_colors()
 
     # ── 6. Pass 2: Hardcoded Event Emission ───────────────────────────
-    logger.info("--- PASS 2: Real-time Event Emission ---")
+    logger.info("Starting Pass 2 for actual emission...")
     cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
     VisitorTracker.reset()
     tracker = VisitorTracker(
         camera_id=camera_id,
-        zones=layout.get("zones", {}),
+        zones=zones,
         entry_threshold_y=layout.get("entry_threshold_y"),
         billing_zone_id=billing_zone_id,
         is_billing_camera=is_billing_camera,
