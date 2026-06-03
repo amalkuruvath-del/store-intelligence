@@ -24,9 +24,7 @@ def main():
         sys.exit(1)
 
     if not os.path.isfile(layout_path):
-        print(f"\n[FATAL ERROR] Layout file '{layout_path}' not found!")
-        print("The challenge rubric strictly mandates 'No manual intervention' during execution.")
-        print("Our pipeline natively parses JSON, but reviewers must provide the 'store_layout.json' file alongside the clips as specified in the PDF.")
+        print(f"[FATAL ERROR] Layout file '{layout_path}' not found!")
         print("Please ensure 'store_layout.json' is present in the specified directory.")
         sys.exit(1)
 
