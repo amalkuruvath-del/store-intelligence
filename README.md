@@ -240,6 +240,7 @@ store-intelligence/
 │   ├── config.py               # Centralised config + store_layout.json parser
 │   ├── detect.py               # Main YOLOv8 detection loop (CLI)
 │   ├── tracker.py              # IoU tracker + MobileNetV3 Re-ID + staff classification
+│   ├── jsonl_export.py         # Formats and cleans final event_log.jsonl
 │   ├── emit.py                 # Event construction + batch POST
 │   └── run.sh                  # One-command pipeline runner
 ├── dashboard/
@@ -250,10 +251,11 @@ store-intelligence/
 │   ├── test_metrics.py         # Metrics, heatmap, funnel tests
 │   └── test_anomalies.py       # Anomaly detection tests
 ├── DESIGN.md                   # Architecture + AI-assisted decisions
-├── CHOICES.md                  # 5 engineering decisions with full reasoning
+├── CHOICES.md                  # 7 engineering decisions with full reasoning
 ├── docker-compose.yml          # Services: api, db, dashboard
 ├── Dockerfile                  # python:3.11-slim single-stage build
 ├── requirements.txt            # Pinned Python dependencies
+├── event_log.jsonl             # Auto-generated deliverable (Output)
 └── README.md                   # This file
 ```
 
