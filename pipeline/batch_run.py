@@ -6,8 +6,10 @@ from datetime import datetime, timezone
 import subprocess
 
 from pipeline.detect import run, _parse_start_time
+from pipeline.jsonl_export import regenerate_jsonl
 
 def main():
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-7s %(message)s", datefmt="%H:%M:%S")
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", default="data")
@@ -88,6 +90,10 @@ def main():
             print(f"[ERROR] Failed to process {clip}: {e}")
             failed += 1
 
+        # Regenerate filtered JSONL after every clip so the log file
+        # is always in a clean state, even if the pipeline is killed.
+        regenerate_jsonl(store_id)
+
     print("\n=======================================================")
     print("               FINAL GLOBAL STAFF CHECKUP")
     print("=======================================================")
@@ -107,6 +113,11 @@ def main():
         print(f"[INFO] Updated {len(staff_vids)} staff IDs globally in the database.")
     except Exception as e:
         print(f"[ERROR] Failed to run global staff update: {e}")
+
+    # Final JSONL regeneration with perfectly corrected staff flags
+    print("[INFO] Regenerating event_log.jsonl with final staff corrections...")
+    final_count = regenerate_jsonl(store_id)
+    print(f"[INFO] Final event_log.jsonl contains {final_count} filtered events for {store_id}")
 
     print("\n=======================================================")
     print("               PIPELINE RUN COMPLETE")

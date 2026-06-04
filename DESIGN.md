@@ -137,6 +137,13 @@ For the target scale (40 stores, ~5,000 events per store per day), on-demand com
                                GET /stores/X/heatmap  ◀──────── Dashboard
                                GET /stores/X/funnel   ◀──────── Dashboard
                                GET /stores/X/anomalies◀──────── Dashboard
+                                      │
+                                      ▼
+                             [Pipeline Complete]
+                                      │
+                                      ▼
+                        [JSONL Export (event_log.jsonl)]
+
 ```
 
 1. **Detection**: Each video frame is processed by YOLOv8n to produce person bounding boxes.
@@ -146,6 +153,7 @@ For the target scale (40 stores, ~5,000 events per store per day), on-demand com
 5. **Batch ingestion**: Events are buffered and POSTed in batches of up to 50 to the API.
 6. **Storage**: The API validates events, deduplicates by `event_id`, and inserts into PostgreSQL.
 7. **Query**: Dashboard and external clients query analytics endpoints which compute results from stored events on demand.
+8. **Automated Export**: Upon pipeline completion and final staff re-identification, the clean records are automatically mapped and exported to the deliverable `event_log.jsonl` schema.
 
 ---
 

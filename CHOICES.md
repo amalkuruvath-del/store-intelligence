@@ -95,3 +95,18 @@ A **Two-Pass Video Architecture** that separates discovery from evaluation.
 2. **Pass 2 (Real-Time Emission)**: Once the true staff color is mathematically confirmed, the pipeline resets and re-runs the footage. It uses the discovered color as a hardcoded truth, allowing it to evaluate and emit staff tags in real-time with perfect consistency.
 
 While this doubles the processing time for the video files, it entirely eliminates retroactive database updates and prevents bad lighting from polluting the customer analytics funnel. In a real-world edge deployment where cameras stream continuously, Pass 1 runs once every morning to calibrate the day's uniform color, and Pass 2 runs continuously for the rest of the day.
+
+---
+
+## Decision 6 — Event Log Generation
+
+### The Problem
+The system needs to output a flat `event_log.jsonl` file conforming to a strict schema for final evaluation. We had to decide whether to stream events to this file in real-time as the pipeline runs, or generate it dynamically.
+
+### What We Chose
+A **Hybrid Automated Export** that regenerates the log after every single clip, with a final definitive export at the absolute end of the pipeline execution.
+
+### Why
+Generating the log dynamically from the database allows us to perfectly enforce multi-camera filters (e.g., stripping out false-positive "footpath walkers" who only ever appear on the entry camera but never actually enter the store). 
+
+More importantly, it ensures the `is_staff` flag is mathematically perfect. Because our global staff checkup (Decision 5) happens after all footage is analyzed, any real-time streaming log would contain unverified staff flags. By pulling the JSONL directly from the corrected PostgreSQL database at the end of the run, we guarantee that the final deliverable contains 100% clean, correlated, and behaviorally-verified events.
