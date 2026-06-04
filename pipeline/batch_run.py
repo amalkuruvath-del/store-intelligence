@@ -25,6 +25,12 @@ def main():
         print(f"[ERROR] Data directory not found: {data_dir}")
         sys.exit(1)
 
+    # If layout is a relative default, resolve it inside data_dir
+    if not os.path.isabs(layout_path) and not os.path.isfile(layout_path):
+        candidate = os.path.join(data_dir, layout_path)
+        if os.path.isfile(candidate):
+            layout_path = candidate
+
     if not os.path.isfile(layout_path):
         print(f"[FATAL ERROR] Layout file '{layout_path}' not found!")
         print("Please ensure 'store_layout.json' is present in the specified directory.")

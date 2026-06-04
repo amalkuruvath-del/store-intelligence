@@ -411,6 +411,7 @@ class VisitorTracker:
     """
 
     _global_features: Dict[str, np.ndarray] = {}   # visitor_id → histogram
+    _global_colors: Dict[str, Tuple[Tuple[int,int,int], Tuple[int,int,int]]] = {}  # visitor_id → (upper_bgr, lower_bgr)
     _global_id_map: Dict[str, str] = {}             # local_vid → canonical_vid
     _global_color_votes: Dict[str, Dict[tuple, float]] = {} # vid -> bin -> total_weight
     _staff_vids: set = set()
@@ -432,6 +433,7 @@ class VisitorTracker:
     def full_reset(cls):
         """Full reset including Re-ID features. Use between different stores."""
         cls._global_features.clear()
+        cls._global_colors.clear()
         cls._global_id_map.clear()
         cls._global_color_votes.clear()
         cls._staff_vids.clear()
@@ -644,13 +646,17 @@ class VisitorTracker:
                 # Cross-camera re-id for everyone
                 hist = self._compute_appearance_hist(frame, bbox)
                 vs.appearance_hist = hist
-                canonical = self._cross_camera_match(vs.visitor_id, hist)
+                canonical = self._cross_camera_match(
+                    vs.visitor_id, hist,
+                    upper_bgr=vs.upper_hsv, lower_bgr=vs.lower_hsv,
+                )
                 if canonical is not None:
                     vs.visitor_id = canonical
                 else:
-                    # Register in global feature buffer
+                    # Register in global feature buffer + colors
                     if hist is not None:
                         VisitorTracker._global_features[vs.visitor_id] = hist
+                        VisitorTracker._global_colors[vs.visitor_id] = (vs.upper_hsv, vs.lower_hsv)
 
                 self._visitors[track_id] = vs
 
@@ -1009,17 +1015,38 @@ class VisitorTracker:
         feat = feat.squeeze().cpu().numpy()
         return feat
 
+    @staticmethod
+    def _color_distance(
+        c1: Tuple[int, int, int],
+        c2: Tuple[int, int, int],
+    ) -> float:
+        """Euclidean distance between two BGR colour tuples."""
+        return float(((c1[0]-c2[0])**2 + (c1[1]-c2[1])**2 + (c1[2]-c2[2])**2) ** 0.5)
+
     @classmethod
     def _cross_camera_match(
         cls,
         local_vid: str,
         hist: Optional[np.ndarray],
+        upper_bgr: Optional[Tuple[int,int,int]] = None,
+        lower_bgr: Optional[Tuple[int,int,int]] = None,
     ) -> Optional[str]:
         """Try to match *hist* against the global feature buffer.
+
+        Uses a two-gate approach:
+          1. Neural network cosine similarity (MobileNetV3 embeddings)
+          2. Colour verification — upper and lower body BGR must be
+             within ``COLOR_VERIFY_MAX_DIST`` Euclidean distance.
+
+        Both gates must pass for a match to be accepted.  This prevents
+        merging two different people who happen to produce similar generic
+        'human' embeddings from the ImageNet-pretrained backbone.
 
         Returns the canonical ``visitor_id`` if a match is found, else
         ``None``.
         """
+        COLOR_VERIFY_MAX_DIST = 80.0  # max BGR Euclidean dist per body half
+
         if hist is None or len(cls._global_features) == 0:
             return None
 
@@ -1040,7 +1067,24 @@ class VisitorTracker:
                 continue
             sim = dot / (norm_a * norm_b)
             dist = 1.0 - sim
-            if dist < config.REID_DISTANCE_THRESHOLD and sim > best_sim:
+            if dist >= config.REID_DISTANCE_THRESHOLD:
+                continue
+
+            # ── Gate 2: Colour verification ──────────────────────────
+            stored_colors = cls._global_colors.get(vid)
+            if stored_colors is not None and upper_bgr is not None and lower_bgr is not None:
+                s_upper, s_lower = stored_colors
+                d_upper = cls._color_distance(upper_bgr, s_upper)
+                d_lower = cls._color_distance(lower_bgr, s_lower)
+                if d_upper > COLOR_VERIFY_MAX_DIST or d_lower > COLOR_VERIFY_MAX_DIST:
+                    logger.debug(
+                        "Re-ID colour gate blocked %s → %s  "
+                        "(upper=%.0f, lower=%.0f, threshold=%.0f)",
+                        local_vid, vid, d_upper, d_lower, COLOR_VERIFY_MAX_DIST,
+                    )
+                    continue  # colours too different — reject match
+
+            if sim > best_sim:
                 best_sim = sim
                 best_vid = vid
 

@@ -1,7 +1,14 @@
-# Detection pipeline dependencies
-# Install with: pip install -r pipeline/requirements.txt
-ultralytics>=8.3.0
-opencv-python>=4.10.0
-numpy>=1.26.0
-scipy>=1.14.0
-requests>=2.32.0
+# Pipeline / Computer Vision
+# Install locally: pip install -r pipeline/requirements.txt
+# These are NOT installed inside Docker — the ML pipeline runs on bare metal
+# for maximum hardware acceleration (see CHOICES.md Decision 7).
+
+opencv-python>=4.8.0
+ultralytics>=8.0.0
+torch>=2.0.0
+torchvision>=0.15.0
+scipy>=1.10.0
+shapely>=2.0.0
+psycopg2-binary>=2.9.0
+requests>=2.28.0
+Pillow>=9.0.0
