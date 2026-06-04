@@ -49,6 +49,10 @@ curl http://localhost:8000/stores/STORE_BLR_002/metrics | python -m json.tool
 - **Dashboard**: `http://localhost:8501`
 - **API Docs (Swagger)**: `http://localhost:8000/docs`
 
+### 📄 Output Deliverable
+
+Upon successful completion of the pipeline (Step 6), the system automatically generates the final, filtered **`event_log.jsonl`** file in the root directory. This file conforms strictly to the challenge schema and features perfect multi-camera tracking and verified `is_staff` classifications.
+
 ---
 
 ## 📡 API Documentation
