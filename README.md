@@ -25,7 +25,9 @@ Get the system running in under 5 commands:
 
 ```bash
 # 1. Clone and enter the project
-git clone <repo-url> && cd store-intelligence
+git clone https://github.com/amalkuruvath-del/store-intelligence.git 
+
+cd store-intelligence
 
 # 2. Build and start all services (API + PostgreSQL + Dashboard)
 docker compose up --build -d
@@ -43,8 +45,10 @@ source venv/bin/activate  # (Or `.\venv\Scripts\activate` on Windows)
 pip install -r pipeline/requirements.txt
 
 # 6. Run the detection pipeline against the CCTV clips
-# Usage: bash run.sh [PATH_TO_YOUR_DATA_FOLDER] [STORE_ID]
-cd pipeline && bash run.sh ../data/Store_1 STORE_01
+# Usage:run.ps1 -DataDir "../data/ [PATH_TO_YOUR_DATA_FOLDER] [STORE_ID]
+cd pipeline 
+bash run.sh ../data/Store_1 STORE_01
+.\run.ps1 -DataDir "../data/Store 1" -StoreId "STORE_01"
 
 # 7. Verify — query store metrics
 curl http://localhost:8000/stores/STORE_BLR_002/metrics | python -m json.tool
