@@ -23,7 +23,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from sqlalchemy import select, text
 
-from app.database import Base, SessionLocal, engine
+from app.database import Base, _get_engine
 from app.models import PosTransaction
 
 # ---------------------------------------------------------------------------
@@ -54,6 +54,7 @@ _STARTUP_TS: float = 0.0
 
 def _seed_pos_data() -> None:
     """Load /data/pos_transactions.csv into PosTransaction table if it is empty."""
+    _, SessionLocal = _get_engine()
     db = SessionLocal()
     try:
         count = db.scalar(select(PosTransaction.id).limit(1))
@@ -119,6 +120,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     log.info("startup_begin")
     # Create all tables (idempotent)
+    engine, _ = _get_engine()
     Base.metadata.create_all(bind=engine)
     log.info("tables_created")
 

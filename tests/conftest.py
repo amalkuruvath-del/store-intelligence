@@ -11,6 +11,7 @@ NOTE: Uses SQLite in-memory for fast, isolated tests.  The production API
 uses PostgreSQL, but SQLAlchemy ORM compatibility keeps them interchangeable.
 """
 import os
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 import sys
 import uuid
 import random

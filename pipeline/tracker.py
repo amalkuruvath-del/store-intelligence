@@ -34,7 +34,7 @@ from scipy.optimize import linear_sum_assignment
 from pipeline import config
 from pipeline.emit import (
     BILLING_QUEUE_JOIN,
-    BILLING_QUEUE_LEAVE,
+    BILLING_QUEUE_ABANDON,
     ENTRY,
     EXIT,
     REENTRY,
@@ -348,20 +348,27 @@ def point_in_polygon(point: Point, polygon: Sequence[Point]) -> bool:
 # ═══════════════════════════════════════════════════════════════════════════
 
 import os
+import threading
+
+# Module-level lock — works on all platforms (Windows, Linux, macOS).
+# Prevents race conditions when multiple cameras generate visitor IDs in parallel.
+_id_lock = threading.Lock()
 
 def _make_visitor_id(track_id: int, camera_id: str) -> str:
-    """Generate sequential unique IDs across all pipeline executions starting from 1000."""
+    """Generate sequential unique IDs across all pipeline executions starting from 1000.
+    Uses a threading lock to prevent race conditions during parallel processing."""
     counter_file = os.path.join(os.path.dirname(__file__), "..", "data", "id_counter.txt")
-    if not os.path.exists(counter_file):
-        val = 1000
-    else:
-        try:
-            with open(counter_file, "r") as f:
-                val = int(f.read().strip())
-        except ValueError:
+    with _id_lock:
+        if not os.path.exists(counter_file):
             val = 1000
-    with open(counter_file, "w") as f:
-        f.write(str(val + 1))
+        else:
+            try:
+                with open(counter_file, "r") as f:
+                    val = int(f.read().strip())
+            except ValueError:
+                val = 1000
+        with open(counter_file, "w") as f:
+            f.write(str(val + 1))
     return str(val)
 
 
@@ -419,6 +426,7 @@ class VisitorTracker:
         cls._staff_vids.clear()
         cls._laptop_users.clear()
         cls._multiple_occurrence_colors.clear()
+        SimpleTracker._next_id = 0
 
     @classmethod
     def full_reset(cls):
@@ -429,6 +437,7 @@ class VisitorTracker:
         cls._staff_vids.clear()
         cls._laptop_users.clear()
         cls._multiple_occurrence_colors.clear()
+        SimpleTracker._next_id = 0
 
     @classmethod
     def update_staff_colors(cls):
@@ -670,13 +679,14 @@ class VisitorTracker:
                 ]
 
         current_frame_bins = {}
+        # Build O(1) lookup dict once per frame instead of scanning list per track
+        track_dict = {t.track_id: t for t in self._tracker._tracks}
+
         for track_id in active_track_ids:
             vs = self._visitors[track_id]
-            
-            # Use original pre-tracked box (before Kalman smoothing) for color extraction
-            bbox = self._tracker._tracks[self._tracker._tracks.index(
-                next(t for t in self._tracker._tracks if t.track_id == track_id)
-            )].bbox
+
+            # O(1) lookup replacing the previous O(n^2) index+next scan
+            bbox = track_dict[track_id].bbox
             
             # --- COLOR VOTING EVERY FRAME ---
             weight = 1.0
@@ -734,7 +744,7 @@ class VisitorTracker:
                         )
                         vs.session_seq += 1
                         evt2 = self._event_dict(
-                            BILLING_QUEUE_LEAVE, vs, frame_time,
+                            BILLING_QUEUE_ABANDON, vs, frame_time,
                             zone_id=old_zone,
                             metadata={
                                 "session_seq": vs.session_seq,
@@ -1069,18 +1079,35 @@ class VisitorTracker:
     ) -> Dict[str, Any]:
         """Build an event dict ready for ``EventEmitter.emit()``."""
         is_staff = vs.visitor_id in VisitorTracker._staff_vids
-        
-        # Hardcoded method logic for Pass 2
+
+        # Dynamic color check: use the live dominant color bin accumulated via
+        # voting (more robust than the spawn-time snapshot). Fall back to the
+        # spawn-time upper_hsv/lower_hsv for visitors with no votes yet.
         if VisitorTracker._staff_color_hardcoded is not None:
             bn = VisitorTracker._staff_color_hardcoded
-            dists = [
-                abs(bn[0][0] - vs.upper_hsv[0]//32),
-                abs(bn[0][1] - vs.upper_hsv[1]//32),
-                abs(bn[0][2] - vs.upper_hsv[2]//32),
-                abs(bn[1][0] - vs.lower_hsv[0]//32),
-                abs(bn[1][1] - vs.lower_hsv[1]//32),
-                abs(bn[1][2] - vs.lower_hsv[2]//32),
-            ]
+
+            # Try live dominant bin from color votes first
+            vid_votes = VisitorTracker._global_color_votes.get(vs.visitor_id)
+            if vid_votes:
+                live_bin = max(vid_votes.items(), key=lambda x: x[1])[0]
+                dists = [
+                    abs(bn[0][0] - live_bin[0][0]),
+                    abs(bn[0][1] - live_bin[0][1]),
+                    abs(bn[0][2] - live_bin[0][2]),
+                    abs(bn[1][0] - live_bin[1][0]),
+                    abs(bn[1][1] - live_bin[1][1]),
+                    abs(bn[1][2] - live_bin[1][2]),
+                ]
+            else:
+                # Fallback: newly spawned visitor with no votes yet
+                dists = [
+                    abs(bn[0][0] - vs.upper_hsv[0]//32),
+                    abs(bn[0][1] - vs.upper_hsv[1]//32),
+                    abs(bn[0][2] - vs.upper_hsv[2]//32),
+                    abs(bn[1][0] - vs.lower_hsv[0]//32),
+                    abs(bn[1][1] - vs.lower_hsv[1]//32),
+                    abs(bn[1][2] - vs.lower_hsv[2]//32),
+                ]
             if all(d <= 1 for d in dists):
                 is_staff = True
             

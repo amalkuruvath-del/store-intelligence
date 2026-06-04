@@ -10,7 +10,7 @@ from datetime import datetime, time, timedelta, timezone
 import structlog
 from fastapi import APIRouter, Depends, Path, Query
 from fastapi.responses import JSONResponse
-from sqlalchemy import and_, case, distinct, func, select, text
+from sqlalchemy import and_, case, distinct, func, select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -58,8 +58,13 @@ def get_store_metrics(
         )
 
         # ---- conversion_rate ----
+        # Matches billing queue joins to POS transactions within a 5-minute
+        # window using SQLAlchemy ORM — works on both SQLite (tests) and
+        # PostgreSQL (production).
         converted = 0
         if unique_visitors > 0:
+            window = timedelta(minutes=5)
+
             billing_rows = db.execute(
                 select(
                     EventRecord.visitor_id,
@@ -71,26 +76,36 @@ def get_store_metrics(
                         EventRecord.event_type.in_(
                             ["BILLING_QUEUE_JOIN", "ZONE_ENTER"]
                         ),
-                        EventRecord.zone_id.ilike("%billing%"),
+                        EventRecord.zone_id.contains("billing"),
                     )
                 ).group_by(EventRecord.visitor_id)
             ).all()
 
             pos_rows = db.execute(
                 select(PosTransaction.timestamp).where(
-                    and_(
-                        PosTransaction.store_id == store_id,
-                    )
+                    PosTransaction.store_id == store_id,
                 )
             ).scalars().all()
 
-            converted_visitors = set()
-            for brow in billing_rows:
-                for pos_ts in pos_rows:
-                    if pos_ts >= brow.billing_ts and pos_ts <= brow.billing_ts + timedelta(minutes=5):
-                        converted_visitors.add(brow.visitor_id)
-                        break
+            # Sort POS timestamps once so we can break early per billing row.
+            # Normalise all to naive UTC to avoid tz-aware vs tz-naive TypeError
+            # (SQLite returns naive datetimes even for DateTime(timezone=True) columns).
+            def _to_naive(dt: datetime) -> datetime:
+                if dt is None:
+                    return datetime.min
+                return dt.replace(tzinfo=None) if dt.tzinfo is not None else dt
 
+            pos_sorted = sorted(_to_naive(ts) for ts in pos_rows)
+            converted_visitors: set[str] = set()
+            for brow in billing_rows:
+                bts = _to_naive(brow.billing_ts)
+                for pos_ts in pos_sorted:
+                    if pos_ts < bts:
+                        continue
+                    if pos_ts > bts + window:
+                        break
+                    converted_visitors.add(brow.visitor_id)
+                    break
             converted = len(converted_visitors)
 
         conversion_rate = round(converted / unique_visitors, 4) if unique_visitors else 0.0
@@ -133,7 +148,7 @@ def get_store_metrics(
                     EventRecord.store_id == store_id,
                     EventRecord.is_staff == False,  # noqa: E712
                     EventRecord.event_type.in_(["ZONE_EXIT", "BILLING_QUEUE_ABANDON"]),
-                    EventRecord.zone_id.ilike("%billing%"),
+                    EventRecord.zone_id.contains("billing"),
                 )
             )
         ).subquery("exited")

@@ -79,8 +79,12 @@ def get_funnel(
         )
 
         # Stage 4: Purchase — billing queue visitors correlated with POS txn
+        # Uses sorted POS list + early-break loop — compatible with both
+        # SQLite (tests) and PostgreSQL (production), and O(n log n) overall.
         purchase_count = 0
         if billing_queue_count > 0:
+            window = timedelta(minutes=5)
+
             billing_rows = db.execute(
                 select(
                     EventRecord.visitor_id,
@@ -97,19 +101,20 @@ def get_funnel(
 
             pos_rows = db.execute(
                 select(PosTransaction.timestamp).where(
-                    and_(
-                        PosTransaction.store_id == store_id,
-                    )
+                    PosTransaction.store_id == store_id,
                 )
             ).scalars().all()
 
-            converted_visitors = set()
+            pos_sorted = sorted(pos_rows)
+            converted_visitors: set[str] = set()
             for brow in billing_rows:
-                for pos_ts in pos_rows:
-                    if pos_ts >= brow.join_ts and pos_ts <= brow.join_ts + timedelta(minutes=5):
-                        converted_visitors.add(brow.visitor_id)
+                for pos_ts in pos_sorted:
+                    if pos_ts < brow.join_ts:
+                        continue
+                    if pos_ts > brow.join_ts + window:
                         break
-
+                    converted_visitors.add(brow.visitor_id)
+                    break
             purchase_count = len(converted_visitors)
 
         def _drop(prev: int, cur: int) -> float:
