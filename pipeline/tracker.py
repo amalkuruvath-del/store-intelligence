@@ -413,7 +413,16 @@ class VisitorTracker:
 
     @classmethod
     def reset(cls):
-        """Reset all tracking states between passes."""
+        """Reset color voting states between passes, but KEEP Re-ID features
+        so cross-camera matching works across clips."""
+        cls._global_color_votes.clear()
+        cls._staff_vids.clear()
+        cls._laptop_users.clear()
+        cls._multiple_occurrence_colors.clear()
+
+    @classmethod
+    def full_reset(cls):
+        """Full reset including Re-ID features. Use between different stores."""
         cls._global_features.clear()
         cls._global_id_map.clear()
         cls._global_color_votes.clear()
