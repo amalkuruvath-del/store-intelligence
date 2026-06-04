@@ -110,3 +110,18 @@ A **Hybrid Automated Export** that regenerates the log after every single clip, 
 Generating the log dynamically from the database allows us to perfectly enforce multi-camera filters (e.g., stripping out false-positive "footpath walkers" who only ever appear on the entry camera but never actually enter the store). 
 
 More importantly, it ensures the `is_staff` flag is mathematically perfect. Because our global staff checkup (Decision 5) happens after all footage is analyzed, any real-time streaming log would contain unverified staff flags. By pulling the JSONL directly from the corrected PostgreSQL database at the end of the run, we guarantee that the final deliverable contains 100% clean, correlated, and behaviorally-verified events.
+
+---
+
+## Decision 7 — Local Execution for ML Pipeline
+
+### The Problem
+The challenge required delivering a complete system. We had to decide whether to Dockerize the entire system (including the heavy Computer Vision pipeline) or keep the pipeline running natively on the host machine.
+
+### What We Chose
+We Dockerized the Web Tier (PostgreSQL, FastAPI, Streamlit) but intentionally kept the ML Pipeline (YOLOv8 + MobileNetV3) as a local virtual environment script.
+
+### Why
+1. **Hardware Acceleration Constraints**: Deep learning models heavily rely on CPU vectorization (AVX2/AVX-512) and GPU acceleration. Running PyTorch inside a standard Docker container creates massive overhead and blocks direct access to host hardware unless the complex `nvidia-docker` toolkit is installed on the host machine.
+2. **Portability vs. Bloat**: A Docker image containing PyTorch, OpenCV, and Ultralytics easily exceeds 4GB. By running the pipeline inside a local Python `venv`, the system remains lightweight and can run gracefully on any evaluator's machine (Windows, Mac, or Linux) utilizing whatever native hardware acceleration is available.
+3. **Clean Microservice Boundary**: This mimics real-world edge AI architecture. Heavy, hardware-dependent ML edge workers run on bare-metal for maximum frame throughput, sending lightweight JSON telemetric payloads over the network to a central, easily-scalable Dockerized cloud backend.
