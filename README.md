@@ -6,18 +6,7 @@ An end-to-end pipeline that transforms raw CCTV footage into actionable store an
 
 > Built for the Purplle Tech Challenge 2026 — Round 2
 
----
 
-## 📋 Prerequisites
-
-| Requirement | Version |
-|---|---|
-| Python | 3.11+ |
-| Docker & Docker Compose | 24.0+ / v2 |
-| Git | 2.40+ |
-| NVIDIA GPU (optional) | CUDA 12.x drivers — speeds up YOLOv8 inference ~10× |
-
----
 
 ## 🚀 Quick Start
 
@@ -47,8 +36,10 @@ pip install -r pipeline/requirements.txt
 # 6. Run the detection pipeline against the CCTV clips
 # Usage:run.ps1 -DataDir "../data/ [PATH_TO_YOUR_DATA_FOLDER] [STORE_ID]
 cd pipeline 
-bash run.sh ../data/Store_1 STORE_01
-.\run.ps1 -DataDir "../data/Store 1" -StoreId "STORE_01"
+.\run.ps1 -DataDir "../data/Store 1" -StoreId "STORE_01"  
+# OR
+bash run.sh ../data/Store 1 STORE_01
+
 
 # 7. Verify — query store metrics
 curl http://localhost:8000/stores/STORE_BLR_002/metrics | python -m json.tool
